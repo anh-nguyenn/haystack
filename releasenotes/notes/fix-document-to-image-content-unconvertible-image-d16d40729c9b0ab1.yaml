@@ -1,0 +1,6 @@
+---
+fixes:
+  - |
+    ``DocumentToImageContent`` now skips an image file that cannot be decoded instead of failing the whole
+    ``run()`` call. When resizing is enabled, a corrupt image leaves ``None`` in its ``image_contents`` slot
+    and a warning names the document, while the other documents are still converted.

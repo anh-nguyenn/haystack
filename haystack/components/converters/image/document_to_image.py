@@ -147,14 +147,22 @@ class DocumentToImageContent:
                 pdf_page_infos.append(pdf_page_info)
             else:
                 # Process images directly
-                bytestream = ByteStream.from_file_path(filepath=path, mime_type=mime_type)
-                _, base64_image = _encode_image_to_base64(bytestream=bytestream, size=self.size)
-                image_contents[doc_idx] = ImageContent(
-                    base64_image=base64_image,
-                    mime_type=mime_type,
-                    detail=self.detail,
-                    meta={"file_path": document.meta[self.file_path_meta_field]},
-                )
+                try:
+                    bytestream = ByteStream.from_file_path(filepath=path, mime_type=mime_type)
+                    _, base64_image = _encode_image_to_base64(bytestream=bytestream, size=self.size)
+                    image_contents[doc_idx] = ImageContent(
+                        base64_image=base64_image,
+                        mime_type=mime_type,
+                        detail=self.detail,
+                        meta={"file_path": document.meta[self.file_path_meta_field]},
+                    )
+                except Exception as error:
+                    logger.warning(
+                        "Skipping document with ID {document_id}: could not convert the image. Error: {error}",
+                        document_id=document.id,
+                        error=str(error),
+                    )
+                    continue
 
         # efficiently convert PDF pages to images: each PDF is opened and processed only once
         pdf_page_infos_by_doc_idx: dict[int, _PDFPageInfo] = {

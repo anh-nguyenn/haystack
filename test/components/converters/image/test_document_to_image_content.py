@@ -150,3 +150,23 @@ class TestDocumentToImageContent:
 
         assert image_contents[0] is None
         assert image_contents[1] is not None
+
+    def test_run_with_unconvertible_image_keeps_other_documents(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # A direct image whose bytes cannot be decoded must only fail its own document, not the batch.
+        corrupt_image = tmp_path / "corrupt.jpg"
+        corrupt_image.write_bytes(b"not an image")
+
+        converter = DocumentToImageContent(size=(64, 64))
+        documents = [
+            Document(content="", meta={"file_path": "test/test_files/images/apple.jpg"}),
+            Document(content="", meta={"file_path": str(corrupt_image)}),
+        ]
+
+        image_contents = converter.run(documents=documents)["image_contents"]
+
+        assert image_contents[0] is not None
+        assert image_contents[1] is None
+        assert "Skipping document" in caplog.text
+        assert "could not convert the image" in caplog.text
